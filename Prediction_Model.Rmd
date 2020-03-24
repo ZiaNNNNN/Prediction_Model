@@ -1,0 +1,125 @@
+---
+title: "Hw5"
+output: html_document
+---
+
+Problem 1: Progresso Soup Sales
+1.
+a)
+```{r message=FALSE}
+url = "https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/Progresso_Soup.csv"
+PSS = read.csv(url)
+PSS_df = as.data.frame(PSS)
+PSS_df$winter <- ifelse(PSS_df$Month==10|PSS_df$Month==11|PSS_df$Month==12|PSS_df$Month==1|PSS_df$Month==2,as.logical(1), as.logical(0))
+table(PSS_df$winter)
+
+PSS_df$Month = factor(PSS_df$Month, levels = 1:12, labels = c("Jan","Feb","Mar","Apr",
+                                                          "May","Jun","Jul","Aug",
+                                                          "Sep","Oct","Nov","Dec"))
+
+library(ggplot2)
+library(dplyr)
+
+qplot(PSS_df$Sales.Progresso, geom="histogram", binwidth=100,xlim=c(0,10000))
+
+ggplot(PSS_df, aes(x=Month, y=PSS_df$Sales.Progresso)) + stat_summary(fun.y="sum"
+                                                                            , geom="bar")
+
+ggplot(PSS_df, aes(x=winter, y=PSS_df$Sales.Progresso)) + stat_summary(fun.y="sum"
+                                                                            , geom="bar")
+
+ggplot(PSS_df, aes(x=Region, y=PSS_df$Sales.Progresso)) + stat_summary(fun.y="sum"
+                                                                            , geom="bar")
+```
+Total progresso sales are higher during winter time but lower during summer time. Also, east reagion contributed most progresso sales.
+
+b) Winter monthes contributed much higher total progresso sales compared to non-winter monthes.
+
+c)
+```{r message=FALSE}
+market_share_winter = sum(PSS_df[which(PSS_df$winter),9])/sum(PSS_df[which(PSS_df$winter),10])
+market_share_winter
+market_share_non_winter = sum(PSS_df[which(!PSS_df$winter),9])/sum(PSS_df[which(!PSS_df$winter),10])
+market_share_non_winter
+```
+
+2.
+```{r message=FALSE}
+model = lm(PSS_df$Sales.Progresso ~ PSS_df$Region+PSS_df$Low_Income+PSS_df$High_Income+PSS_df$Price.Campbell
++PSS_df$Price.PL+PSS_df$Price.Progresso+PSS_df$winter,data = PSS_df)
+summary(model)
+```
+The r-square of this linear regressio model is 0.394, which means 39.4% of the dependent variables (Sales.Progresso) is accounted for the 
+independent variables.
+Also, since the p-value for each independent variables are small enough, we can keep all of them.
+Basically, this model indicates that the store located in the East region will decrease the Sales.Progresso by 1186.59 dollars than East
+region. Sotres in low_income region will decrease the Sales.Progresso by 292.13 dollars. One dollar increases in the price of Campbell will increase the Sales.Progresso by 922.40 dollars
+
+3.
+Based on this model, we can consider to open some new stores in high income communities in east reagion. Also, we can increase the price of campbell and private label and decrease the price of progresso to increase the sales of progresso.
+
+
+Problem 2:
+1.
+```{r message=FALSE}
+url2 = "https://raw.githubusercontent.com/jcbonilla/BusinessAnalytics/master/BAData/Diamonds.csv"
+diamond = read.csv(url2)
+diamond_df = as.data.frame(diamond)
+diamond_df$ID <- seq.int(nrow(diamond_df))
+diamond_df$Wholesaler = factor(diamond_df$Wholesaler, levels = 1:3, labels = c("1","2","3"))
+ggplot(diamond_df, aes(y=diamond_df$Price, x=diamond_df$ID, color=diamond_df$Wholesaler)) + 
+  geom_point()
+model = lm(diamond_df$Price ~ diamond_df$Carat + diamond_df$Colour + diamond_df$Clarity + diamond_df$Cut.
+           + diamond_df$Polish + diamond_df$Symmetry + diamond_df$Certification, data = diamond_df)
+summary(model)
+intercept_ = as.numeric(summary(model)$coefficients[1, 1])
+carat_coef = as.numeric(summary(model)$coefficients[2, 1])
+cut_very_good_coef = as.numeric(summary(model)$coefficients[21, 1])
+color_J_coef = as.numeric(summary(model)$coefficients[8, 1])
+ClaritySI2_coef = as.numeric(summary(model)$coefficients[13, 1])
+PolishG_coef = as.numeric(summary(model)$coefficients[23, 1])
+SymmetryV_coef = as.numeric(summary(model)$coefficients[29, 1])##ignore this due to p-value > 0.05
+CertificationGIA_coef = as.numeric(summary(model)$coefficients[33, 1])##ignore this due to p-value > 0.05
+quota = intercept_+0.9*carat_coef+cut_very_good_coef+color_J_coef+ClaritySI2_coef+PolishG_coef
+quota
+```
+a)2741.848 < 3100, so the diamond is overpriced.
+
+b)One unit increase in carat, the price increases by 4202.98 dollars. 
+Compared to color D, color E decreases the price by 191 dollars.
+Compared to ClarityFL, diamond with ClarityI2 decreased the price by 777.74 dollars.
+
+c)The r-squre of this model is 0.9739 which means 97.39% of the dependent variables (Price) is accounted for the independent variables. So this is a good model. However, since some independent variables has high p-value such as Cut.G, Cut.X, Polishv and so on, we should ignore these independent variables in our model.
+
+2.
+a)
+```{r message=FALSE}
+diamond_new = subset(diamond_df, diamond_df$Wholesaler!=3)
+model1 = lm(diamond_new$Price ~ diamond_new$Carat + diamond_new$Colour + diamond_new$Clarity + diamond_new$Cut.
+           + diamond_new$Polish + diamond_new$Symmetry + diamond_new$Certification, data = diamond_new)
+summary(model1)
+```
+
+After dropped wholesaler #3, the r-square of this new model decreases to 0.7735 and the number independent variables with p-values greater than 0.05 incrases, which mean the new model is not fit as good as the previous one. I think the reason is that we have less training samples in the new model so that the new model is not fit that good.
+
+b)
+```{r message=FALSE}
+intercept_ = as.numeric(summary(model1)$coefficients[1, 1])
+carat_coef = as.numeric(summary(model1)$coefficients[2, 1])
+cut_very_good_coef = as.numeric(summary(model1)$coefficients[21, 1])##ignore this due to p-value > 0.05
+color_J_coef = as.numeric(summary(model1)$coefficients[8, 1])
+ClaritySI2_coef = as.numeric(summary(model1)$coefficients[13, 1])
+PolishG_coef = as.numeric(summary(model1)$coefficients[23, 1])##ignore this due to p-value > 0.05
+SymmetryV_coef = as.numeric(summary(model1)$coefficients[29, 1])##ignore this due to p-value > 0.05
+CertificationGIA_coef = as.numeric(summary(model1)$coefficients[31, 1])##ignore this due to p-value > 0.05
+quota = intercept_+0.9*carat_coef+color_J_coef+ClaritySI2_coef
+quota
+predict1 = predict(model, diamond_df, se.fit = TRUE)
+predict2 = predict(model1, diamond_df, se.fit = TRUE)
+plot(diamond_df$Price, main="Real Price")
+plot(predict1$fit, main="Model 1 Prediction")
+plot(predict2$fit, main="Model 2 Prediction")
+
+```
+
+I think model 1 is better and more correct than model 2 because model 1 has higher r-square and the number independent variables with p-values greater than 0.05 less compared to model 2. Also, based on the graphs above, it's not hard to see that the model 1 has better fit shape than model 2.
